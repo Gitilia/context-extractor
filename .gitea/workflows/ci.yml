@@ -56,6 +56,10 @@ jobs:
           test -L automation/context_extractor/js/prompt.js
           diff -q automation/context_extractor/js/dom.js extension/core/dom.js
           diff -q automation/context_extractor/js/prompt.js extension/core/prompt.js
+          test -L automation-js/src/js/dom.js
+          test -L automation-js/src/js/prompt.js
+          diff -q automation-js/src/js/dom.js extension/core/dom.js
+          diff -q automation-js/src/js/prompt.js extension/core/prompt.js
 
       - name: Install package + dev deps
         run: |
@@ -73,3 +77,34 @@ jobs:
         run: |
           python3 scripts/package_extension.py
           test -f dist/context-extractor-extension.zip
+
+  quality-js:
+    name: automation-js (vitest + real Chromium)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: automation-js
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install deps
+        run: npm install
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Vitest
+        run: npm test
+
+      - name: Build (verifies dist/js copy step)
+        run: npm run build

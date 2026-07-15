@@ -4,12 +4,16 @@
 **Clone:** `gitea@git.levkin.ca:ilia/context-extractor.git`
 
 Capture console logs, network activity, JS errors, and clean markdown content
-from a webpage, formatted as an AI-ready prompt. Ships two ways from one
+from a webpage, formatted as an AI-ready prompt. Ships three ways from one
 shared core:
 
 - **`extension/`** — a browser extension (Manifest V3) for interactive use.
 - **`automation/`** — a Python package for scripted/headless use with
   Playwright or [Camoufox](https://camoufox.com).
+- **`automation-js/`** — a Node/TS twin of `automation/` for Playwright
+  (`playwright-core`) or [camoufox-js](https://www.npmjs.com/package/camoufox-js)
+  automation that's already JS, so it can `import` the session directly
+  instead of shelling out to Python.
 
 ```
 context-extractor/
@@ -24,6 +28,10 @@ context-extractor/
 │   ├── context_extractor/       session + CLI
 │   │   └── js/                  symlinks → extension/core/*.js
 │   └── tests/                   pytest + fixture page
+├── automation-js/                Node/TS package for Playwright / camoufox-js
+│   ├── src/session.ts           ← ExtractorSession (async, one class)
+│   │   └── js/                  symlinks → extension/core/*.js
+│   └── tests/                   vitest + real Chromium, shared fixture
 ├── scripts/package_extension.py optional zip for distribution
 ├── .gitea/workflows/ci.yml      Gitea Actions: JS lint + pytest + package smoke
 ├── CURSOR_PROMPT.md             paste into other Cursor chats
@@ -32,9 +40,11 @@ context-extractor/
 
 `extension/core/dom.js` and `extension/core/prompt.js` are the single source
 of truth for DOM/markdown/prompt logic — the extension loads them directly as
-content-script files, and the Python package reads the exact same files
-(via symlinks) and runs them with `page.evaluate()`. There's only one place
-to fix a markdown-formatting bug.
+content-script files, and **both** automation packages read the exact same
+files (via symlinks) and run them with `page.evaluate()`. There's only one
+place to fix a markdown-formatting bug, and the Python/JS test suites both
+run against the same fixture page (`automation/tests/fixtures/sample.html`)
+so a regression can't silently diverge between the two.
 
 ## Use from another Cursor project
 
@@ -125,6 +135,27 @@ Headless CLI, handy in CI:
 ```bash
 context-extractor https://example.com --selector "#main" --engine camoufox --out prompt.md
 ```
+
+### JS/TS twin (`automation-js/`) — for Node/Playwright or camoufox-js automation
+
+Same idea, no Python subprocess:
+
+```bash
+cd automation-js
+npm install && npm run build
+```
+
+```ts
+import { chromium } from 'playwright-core';
+import { ExtractorSession } from 'context-extractor'; // automation-js
+
+const page = await (await chromium.launch()).newPage();
+const session = new ExtractorSession(page); // attach BEFORE navigating
+await page.goto('https://example.com', { waitUntil: 'networkidle' });
+console.log(await session.buildAiPrompt()); // or session.extractMarkdown('#main')
+```
+
+See `automation-js/README.md`.
 
 ### Why automation doesn't reuse the extension's patcher
 

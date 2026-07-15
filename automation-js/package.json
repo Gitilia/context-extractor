@@ -1,0 +1,54 @@
+{
+  "name": "context-extractor",
+  "version": "1.0.0",
+  "description": "Capture console/network/errors and extract AI-ready markdown from a Playwright (Node) page — JS/TS twin of the automation/ Python package, sharing the same extension/core/*.js.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup && npm run copy-js",
+    "copy-js": "mkdir -p dist/js && cp -L src/js/dom.js src/js/prompt.js dist/js/",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "peerDependencies": {
+    "playwright-core": ">=1.40.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "playwright": "^1.55.0",
+    "playwright-core": "^1.55.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://git.levkin.ca/ilia/context-extractor.git"
+  },
+  "keywords": [
+    "playwright",
+    "camoufox",
+    "scraping",
+    "llm",
+    "markdown",
+    "browser-extension"
+  ]
+}

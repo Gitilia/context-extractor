@@ -1,4 +1,4 @@
-.PHONY: help test lint package ci install
+.PHONY: help test test-js lint package ci install install-js
 
 help: ## Show targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
@@ -8,8 +8,14 @@ install: ## Create venv and install automation package + Playwright Chromium
 	cd automation && .venv/bin/pip install -U pip && .venv/bin/pip install -e ".[dev]"
 	cd automation && .venv/bin/playwright install chromium
 
+install-js: ## npm install automation-js (uses the Chromium cache npx playwright already has)
+	cd automation-js && npm install
+
 test: ## Run pytest
 	cd automation && .venv/bin/pytest -q
+
+test-js: ## Run automation-js vitest suite (real headless Chromium)
+	cd automation-js && npm test
 
 lint: ## Syntax-check extension JS + validate manifest JSON
 	@node --check extension/core/dom.js
@@ -24,4 +30,4 @@ lint: ## Syntax-check extension JS + validate manifest JSON
 package: ## Zip extension/ into dist/
 	python3 scripts/package_extension.py
 
-ci: lint test package ## Local stand-in for GitHub Actions
+ci: lint test test-js package ## Local stand-in for GitHub Actions
