@@ -1,5 +1,8 @@
 # Context Extractor
 
+**Repo:** [git.levkin.ca/ilia/context-extractor](https://git.levkin.ca/ilia/context-extractor)  
+**Clone:** `gitea@git.levkin.ca:ilia/context-extractor.git`
+
 Capture console logs, network activity, JS errors, and clean markdown content
 from a webpage, formatted as an AI-ready prompt. Ships two ways from one
 shared core:
@@ -22,7 +25,7 @@ context-extractor/
 │   │   └── js/                  symlinks → extension/core/*.js
 │   └── tests/                   pytest + fixture page
 ├── scripts/package_extension.py optional zip for distribution
-├── .github/workflows/ci.yml     JS lint + pytest + package smoke
+├── .gitea/workflows/ci.yml      Gitea Actions: JS lint + pytest + package smoke
 ├── CURSOR_PROMPT.md             paste into other Cursor chats
 └── Makefile                     make test / make lint / make package
 ```
