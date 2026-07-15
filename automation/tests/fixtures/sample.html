@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Context Extractor Fixture</title>
+</head>
+<body>
+  <header>
+    <h1>Fixture Page</h1>
+    <nav>Skip this noise</nav>
+  </header>
+  <main id="main-content">
+    <h2>Section</h2>
+    <p>Hello <strong>world</strong>, visit <a href="/docs">docs</a>.</p>
+    <ul>
+      <li>Alpha</li>
+      <li>Beta</li>
+    </ul>
+    <div style="display:none">hidden-inline-style-blob {"secretConfig": "should-not-appear"}</div>
+    <div class="css-hidden">hidden-via-stylesheet-blob {"lixTracking": "should-not-appear"}</div>
+    <div hidden>hidden-attribute-blob should-not-appear</div>
+    <div aria-hidden="true">aria-hidden-blob should-not-appear</div>
+  </main>
+  <style>.css-hidden { display: none; }</style>
+  <script>
+    console.log("fixture boot");
+    console.warn("fixture warn");
+    console.error("fixture error log");
+    setTimeout(() => { throw new Error("fixture boom"); }, 20);
+    fetch("/missing-endpoint").catch(() => {});
+  </script>
+</body>
+</html>

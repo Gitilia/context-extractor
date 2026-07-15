@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Context Extractor</title>
+<style>
+  :root {
+    --bg: #171614;
+    --surface: #1c1b19;
+    --surface-2: #232220;
+    --border: #2e2c29;
+    --text: #e8e6e3;
+    --muted: #8a8580;
+    --primary: #4f98a3;
+    --primary-hover: #5fb0bd;
+    --ok: #6ecf7a;
+    --warn: #e7c46a;
+    --err: #e96b8a;
+    --redir: #e7c46a;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    width: 440px;
+    background: var(--bg); color: var(--text);
+    font: 13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 12px; border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .header h1 {
+    margin: 0; font-size: 13px; font-weight: 600; color: var(--text);
+    letter-spacing: 0.2px;
+  }
+  .header .sub { font-size: 11px; color: var(--muted); }
+
+  .tabs {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    position: relative;
+    background: transparent; color: var(--muted);
+    border: 0; border-bottom: 2px solid transparent;
+    padding: 9px 4px; font-size: 12px; font-weight: 500;
+    cursor: pointer; text-align: center;
+    font-family: inherit;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--text); border-bottom-color: var(--primary); }
+  .tab .count {
+    color: var(--muted); font-size: 11px; margin-left: 4px;
+  }
+  .tab .dot {
+    display: none;
+    position: absolute; top: 6px; right: 8px;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--err);
+  }
+  .tab.has-issue .dot { display: block; }
+
+  .panel { display: none; padding: 12px; }
+  .panel.active { display: block; }
+
+  .row { display: flex; gap: 6px; align-items: center; }
+  .row + .row { margin-top: 8px; }
+
+  input[type="text"] {
+    flex: 1; min-width: 0;
+    background: var(--surface-2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 4px;
+    padding: 6px 8px; font: 12px ui-monospace, Menlo, Consolas, monospace;
+    outline: none;
+  }
+  input[type="text"]:focus { border-color: var(--primary); }
+
+  button {
+    background: var(--surface-2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 4px;
+    padding: 6px 10px; font-size: 12px; cursor: pointer;
+    font-family: inherit;
+  }
+  button:hover { background: #2a2825; border-color: #3a3733; }
+  button.primary {
+    background: var(--primary); border-color: var(--primary); color: #0f1f22;
+    font-weight: 600;
+  }
+  button.primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+  button.ghost { background: transparent; }
+  button.danger { color: var(--err); border-color: #3a2a2f; }
+  button.danger:hover { background: #2a1f23; }
+
+  .actions {
+    display: flex; gap: 6px; margin-top: 10px;
+    padding-top: 10px; border-top: 1px solid var(--border);
+  }
+  .actions .spacer { flex: 1; }
+
+  .preview {
+    margin-top: 10px;
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 4px; padding: 8px;
+    max-height: 280px; overflow: auto;
+    font: 11.5px/1.45 ui-monospace, Menlo, Consolas, monospace;
+    white-space: pre-wrap; word-break: break-word;
+    color: #d6d3cf;
+  }
+  .preview.empty { color: var(--muted); }
+
+  .meta {
+    font-size: 11px; color: var(--muted);
+    margin-top: 6px;
+  }
+
+  .list {
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 4px;
+    max-height: 320px; overflow: auto;
+  }
+  .list .empty {
+    padding: 18px; text-align: center; color: var(--muted); font-size: 12px;
+  }
+
+  .log-row {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+    font: 11.5px ui-monospace, Menlo, Consolas, monospace;
+    display: flex; gap: 8px;
+  }
+  .log-row:last-child { border-bottom: 0; }
+  .log-row .lvl {
+    flex: 0 0 44px; text-transform: uppercase;
+    font-size: 10px; font-weight: 700; padding-top: 1px;
+  }
+  .log-row .msg {
+    flex: 1; min-width: 0; word-break: break-word; white-space: pre-wrap;
+    color: #d6d3cf;
+  }
+  .log-row.error .lvl { color: var(--err); }
+  .log-row.warn  .lvl { color: var(--warn); }
+  .log-row.info  .lvl { color: var(--primary); }
+  .log-row.log   .lvl { color: var(--muted); }
+  .log-row.debug .lvl { color: var(--muted); }
+
+  .net-row {
+    display: grid;
+    grid-template-columns: 50px 50px 1fr 60px;
+    gap: 8px; align-items: center;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+    font: 11px ui-monospace, Menlo, Consolas, monospace;
+  }
+  .net-row:last-child { border-bottom: 0; }
+  .net-row .method { color: var(--muted); font-weight: 700; }
+  .net-row .status { font-weight: 700; }
+  .net-row .url {
+    color: #d6d3cf; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .net-row .dur { color: var(--muted); text-align: right; }
+  .net-row.ok    .status { color: var(--ok); }
+  .net-row.redir .status { color: var(--redir); }
+  .net-row.err   .status { color: var(--err); }
+
+  .err-row {
+    padding: 8px;
+    border-bottom: 1px solid var(--border);
+    font: 11.5px ui-monospace, Menlo, Consolas, monospace;
+  }
+  .err-row:last-child { border-bottom: 0; }
+  .err-row .head {
+    color: var(--err); font-weight: 700; margin-bottom: 4px; word-break: break-word;
+  }
+  .err-row .sub { color: var(--muted); font-size: 10.5px; margin-bottom: 4px; }
+  .err-row .stack {
+    color: #c4c1bd; white-space: pre-wrap; word-break: break-word;
+    max-height: 120px; overflow: auto;
+  }
+
+  .summary {
+    font-size: 11px; color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .summary b { color: var(--text); font-weight: 600; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%);
+    background: #2a3a3d; color: var(--text);
+    border: 1px solid var(--primary);
+    padding: 6px 12px; border-radius: 4px;
+    font-size: 12px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 140ms ease;
+    z-index: 10;
+  }
+  .toast.show { opacity: 1; }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: #2e2c29; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3a3733; }
+  ::-webkit-scrollbar-track { background: transparent; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>Context Extractor</h1>
+    <span class="sub" id="pageHint">—</span>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-tab="content" role="tab">
+      Content<span class="count" id="count-content"></span><span class="dot"></span>
+    </button>
+    <button class="tab" data-tab="console" role="tab">
+      Console<span class="count" id="count-console"></span><span class="dot"></span>
+    </button>
+    <button class="tab" data-tab="network" role="tab">
+      Network<span class="count" id="count-network"></span><span class="dot"></span>
+    </button>
+    <button class="tab" data-tab="errors" role="tab">
+      Errors<span class="count" id="count-errors"></span><span class="dot"></span>
+    </button>
+  </div>
+
+  <!-- Content tab -->
+  <div class="panel active" data-panel="content">
+    <div class="row">
+      <input type="text" id="selectorInput" placeholder="CSS selector (blank = body)" />
+      <button id="pickBtn" title="Pick an element on the page">Pick</button>
+    </div>
+    <div class="row">
+      <button id="extractBtn" class="primary" style="flex:1">Extract content</button>
+    </div>
+    <div class="meta" id="extractMeta"></div>
+    <div class="preview empty" id="contentPreview">No content extracted yet.</div>
+    <div class="actions">
+      <button id="copyContent" class="primary">Copy</button>
+      <div class="spacer"></div>
+      <button id="clearContent" class="danger ghost">Clear</button>
+    </div>
+  </div>
+
+  <!-- Console tab -->
+  <div class="panel" data-panel="console">
+    <div class="summary" id="consoleSummary">No console activity captured.</div>
+    <div class="list" id="consoleList"></div>
+    <div class="actions">
+      <button id="copyConsole" class="primary">Copy</button>
+      <div class="spacer"></div>
+      <button id="clearConsole" class="danger ghost">Clear</button>
+    </div>
+  </div>
+
+  <!-- Network tab -->
+  <div class="panel" data-panel="network">
+    <div class="summary" id="networkSummary">No requests captured.</div>
+    <div class="list" id="networkList"></div>
+    <div class="actions">
+      <button id="copyNetwork" class="primary">Copy</button>
+      <div class="spacer"></div>
+      <button id="clearNetwork" class="danger ghost">Clear</button>
+    </div>
+  </div>
+
+  <!-- Errors tab -->
+  <div class="panel" data-panel="errors">
+    <div class="summary" id="errorsSummary">No JavaScript errors captured.</div>
+    <div class="list" id="errorsList"></div>
+    <div class="actions">
+      <button id="copyErrors" class="primary">Copy</button>
+      <div class="spacer"></div>
+      <button id="clearErrors" class="danger ghost">Clear</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Copied ✓</div>
+
+  <script src="core/prompt.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

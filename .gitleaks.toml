@@ -1,0 +1,15 @@
+# Minimal gitleaks config for this repo.
+# Extends the default ruleset; no secrets are expected in source.
+title = "context-extractor"
+
+[extend]
+useDefault = true
+
+# Example/fixture HTML and markdown prompt docs can look secret-like;
+# they are intentional fixtures, not credentials.
+[allowlist]
+description = "Known false positives"
+paths = [
+  '''automation/tests/fixtures/''',
+  '''CURSOR_PROMPT\.md''',
+]
