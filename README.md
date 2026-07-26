@@ -46,6 +46,14 @@ place to fix a markdown-formatting bug, and the Python/JS test suites both
 run against the same fixture page (`automation/tests/fixtures/sample.html`)
 so a regression can't silently diverge between the two.
 
+## Versioning
+
+The extension (`extension/manifest.json`), the Python package
+(`automation/pyproject.toml`), and the Node package
+(`automation-js/package.json`) share **one product version** and are bumped
+together — they ship the same `core/*.js`, so a version like `1.4.0` means
+the same extraction behavior in all three.
+
 ## Use from another Cursor project
 
 Copy the block in [`CURSOR_PROMPT.md`](CURSOR_PROMPT.md) into that project's chat
@@ -55,7 +63,7 @@ Copy the block in [`CURSOR_PROMPT.md`](CURSOR_PROMPT.md) into that project's cha
 
 ```bash
 make install   # once
-make ci        # lint + pytest + package smoke (same checks as GitHub Actions)
+make ci        # lint + pytest + vitest + package smoke (same checks as Gitea Actions)
 ```
 
 Or manually:

@@ -17,7 +17,7 @@ test: ## Run pytest
 test-js: ## Run automation-js vitest suite (real headless Chromium)
 	cd automation-js && npm test
 
-lint: ## Syntax-check extension JS + validate manifest JSON
+lint: ## Syntax-check extension JS + validate manifest JSON + ruff on automation/
 	@node --check extension/core/dom.js
 	@node --check extension/core/prompt.js
 	@node --check extension/page-patcher.js
@@ -25,9 +25,10 @@ lint: ## Syntax-check extension JS + validate manifest JSON
 	@node --check extension/background.js
 	@node --check extension/popup.js
 	@python3 -m json.tool extension/manifest.json >/dev/null
+	@cd automation && .venv/bin/ruff check .
 	@echo "lint OK"
 
 package: ## Zip extension/ into dist/
 	python3 scripts/package_extension.py
 
-ci: lint test test-js package ## Local stand-in for GitHub Actions
+ci: lint test test-js package ## Local stand-in for Gitea Actions
