@@ -1,15 +1,15 @@
 # Cursor consumer prompt
 
-Paste this into another Cursor chat when that project should use Context Extractor
-(path below — adjust if you moved the repo).
+Paste this into another Cursor chat when that project should use Context Extractor.
+Replace `<path-to-context-extractor>` with wherever you cloned this repo.
 
 ---
 
 ```text
-Use Context Extractor from ~/Documents/code/context-extractor for browser capture / scrape debugging.
+Use Context Extractor from <path-to-context-extractor> for browser capture / scrape debugging.
 
 Setup (once):
-  cd ~/Documents/code/context-extractor/automation && python3 -m venv .venv && source .venv/bin/activate
+  cd <path-to-context-extractor>/automation && python3 -m venv .venv && source .venv/bin/activate
   pip install -e ".[dev]"
   playwright install chromium
   # optional anti-detect: pip install -e ".[camoufox]"
@@ -29,7 +29,7 @@ Python scrape / CI loop:
   CLI: context-extractor URL --selector CSS --engine chromium|camoufox --out prompt.md
 
 Manual / interactive (Brave or Chrome):
-  Load unpacked: ~/Documents/code/context-extractor/extension
+  Load unpacked: <path-to-context-extractor>/extension
   Then use "Copy" on the broken page.
 
 When debugging scrapers or flaky pages in THIS project:
