@@ -12,10 +12,10 @@ Captures console, network, errors, and clean markdown for agents and debugging.
 
 Public mirror: [github.com/Gitilia/context-extractor](https://github.com/Gitilia/context-extractor).
 
-- `extension/`, browser extension (Manifest V3) for interactive use.
-- `automation/`, Python package for scripted/headless use with
+- `extension/`: browser extension (Manifest V3) for interactive use.
+- `automation/`: Python package for scripted/headless use with
   Playwright or [Camoufox](https://camoufox.com).
-- `automation-js/`, Node/TS twin of `automation/` for Playwright
+- `automation-js/`: Node/TS twin of `automation/` for Playwright
   (`playwright-core`) or [camoufox-js](https://www.npmjs.com/package/camoufox-js)
   automation that's already JS, so it can `import` the session directly
   instead of shelling out to Python.
