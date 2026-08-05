@@ -1,11 +1,14 @@
 # Context Extractor
 
-**Repo:** [git.levkin.ca/ilia/context-extractor](https://git.levkin.ca/ilia/context-extractor)  
-**Clone:** `gitea@git.levkin.ca:ilia/context-extractor.git`
-
 Capture console logs, network activity, JS errors, and clean markdown content
 from a webpage, formatted as an AI-ready prompt. Ships three ways from one
 shared core:
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+**AI-ready page context** — console, network, errors, and clean markdown for agents and debugging.
+
+> Public mirror: [github.com/Gitilia/context-extractor](https://github.com/Gitilia/context-extractor)
 
 - **`extension/`** — a browser extension (Manifest V3) for interactive use.
 - **`automation/`** — a Python package for scripted/headless use with
@@ -219,3 +222,7 @@ so no `main_world_eval` workaround is needed there either.
   `aria-hidden`, but not "visually clipped but AT-readable" sr-only patterns
   (e.g. `position:absolute;clip:rect(0,0,0,0)`) — those are left in on
   purpose since they're usually real text, not hydration data.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
