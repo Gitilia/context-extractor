@@ -11,7 +11,7 @@ Short orientation for Cursor agents. Prefer this over rediscovering the repo.
 
 ## Docs voice
 
-READMEs/guides: `~/Documents/code/project-template/docs/writing-docs.md` (no emoji decoration).
+READMEs/guides: [writing-docs.md](https://github.com/Gitilia/project-template/blob/main/docs/writing-docs.md) (no emoji decoration).
 
 ## Close-out
 
