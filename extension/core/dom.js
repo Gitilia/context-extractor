@@ -62,6 +62,24 @@ function getSelector(el) {
 // ---------------------------------------------------------------------------
 const NEVER_RENDERED_TAGS = new Set(["script", "style", "noscript", "template", "svg", "iframe", "canvas"]);
 
+/** Max length before a data: URL is collapsed in dumps (keeps prompts usable). */
+const DATA_URI_SOFT_MAX = 120;
+
+/**
+ * Collapse long data: URIs so markdown / network dumps don't blow up (e.g. Outline
+ * inlining base64 images). Non-data URLs are returned unchanged.
+ * Keep in sync with truncateDataUri in core/prompt.js.
+ */
+function truncateDataUri(url, softMax) {
+  if (typeof url !== "string" || !url.startsWith("data:")) return url || "";
+  const limit = softMax || DATA_URI_SOFT_MAX;
+  if (url.length <= limit) return url;
+  const comma = url.indexOf(",");
+  const header = comma >= 0 ? url.slice(0, Math.min(comma, 64)) : url.slice(0, 64);
+  const payloadLen = comma >= 0 ? url.length - comma - 1 : url.length;
+  return header + ",…[" + payloadLen + " bytes truncated]";
+}
+
 function isHidden(el) {
   if (!el || el.nodeType !== 1) return false;
   if (el.hidden) return true;
@@ -95,7 +113,7 @@ function extractMarkdown(node) {
     const kids = walkInline(el);
     switch (tag) {
       case "a": {
-        const href = el.getAttribute("href") || "";
+        const href = truncateDataUri(el.getAttribute("href") || "");
         return "[" + kids + "](" + href + ")";
       }
       case "strong":
@@ -183,4 +201,48 @@ function extractMarkdown(node) {
   md = md.replace(/[ \t]+\n/g, "\n");
   md = md.replace(/\n{3,}/g, "\n\n");
   return md.trim();
+}
+
+// ---------------------------------------------------------------------------
+// Interesting controls inventory (agent / SPA debugging)
+// ---------------------------------------------------------------------------
+const CONTROLS_CAP = 80;
+const CONTROL_SELECTOR =
+  'button, [role="button"], [role="menuitem"], [role="option"], [aria-label]';
+
+/**
+ * List interactive / labeled controls under root with visibility flags.
+ * Helps agents find hidden Radix twins ("Document options") without dumping
+ * the whole DOM.
+ */
+function inventoryInterestingControls(root, cap) {
+  const base = root && root.nodeType === 1 ? root : document.body;
+  if (!base || !base.querySelectorAll) return [];
+  const limit = cap || CONTROLS_CAP;
+  const nodes = base.querySelectorAll(CONTROL_SELECTOR);
+  const seen = new Set();
+  const out = [];
+  for (let i = 0; i < nodes.length && out.length < limit; i++) {
+    const el = nodes[i];
+    if (seen.has(el)) continue;
+    seen.add(el);
+    const tag = el.tagName ? el.tagName.toLowerCase() : "";
+    const role = (el.getAttribute && el.getAttribute("role")) || "";
+    const ariaLabel = (el.getAttribute && el.getAttribute("aria-label")) || "";
+    let text = "";
+    try {
+      text = (el.textContent || "").replace(/\s+/g, " ").trim().slice(0, 80);
+    } catch (_) {
+      text = "";
+    }
+    out.push({
+      tag: tag,
+      role: role,
+      ariaLabel: ariaLabel,
+      text: text,
+      visible: !isHidden(el),
+      selector: getSelector(el),
+    });
+  }
+  return out;
 }

@@ -31,6 +31,8 @@ def test_extract_markdown_body_and_selector(page, fixture_url):
     assert "**world**" in full["markdown"]
     assert "[docs](/docs)" in full["markdown"]
     assert "- Alpha" in full["markdown"]
+    assert "bytes truncated" in full["markdown"]
+    assert "4AAQSkZJRgABAQAAAQABAAD" not in full["markdown"]
 
     scoped = session.extract_markdown("#main-content")
     assert scoped["selector"] == "#main-content"
@@ -64,8 +66,21 @@ def test_build_ai_prompt_has_sections(page, fixture_url):
     assert prompt.startswith("# Page Context")
     assert "## Page Content" in prompt
     assert "Hello **world**" in prompt
+    assert "## Interesting Controls" in prompt
+    assert "[visible]" in prompt
+    assert "Document options" in prompt
     assert "JavaScript Errors" in prompt or "Console Errors" in prompt
     assert "_Extracted by Context Extractor_" in prompt
+
+
+def test_inventory_controls_visible_and_hidden(page, fixture_url):
+    session = ExtractorSession(page)
+    page.goto(fixture_url, wait_until="domcontentloaded")
+    controls = session.inventory_controls("#main-content")
+    docs = [c for c in controls if c.get("ariaLabel") == "Document options"]
+    assert len(docs) == 2
+    assert any(c.get("visible") for c in docs)
+    assert any(not c.get("visible") for c in docs)
 
 
 def test_clear_store(page, fixture_url):

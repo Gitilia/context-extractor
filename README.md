@@ -200,6 +200,12 @@ so no `main_world_eval` workaround is needed there either.
   example, its DOM without this filter is 700k+ characters, almost all of
   it invisible config junk). Without this check you'd be feeding an LLM
   chameleon experiment payloads instead of page content.
+- Long `data:` URLs (e.g. inlined images) are truncated in markdown links and
+  in AI-prompt network lines via `truncateDataUri`, so dumps stay usable.
+- `inventoryControls()` / `inventory_controls()` lists buttons, menuitems, and
+  `aria-label` nodes with a **visible vs hidden** flag (capped). `buildAiPrompt`
+  includes an **Interesting Controls** section so agents can spot hidden Radix
+  twins without dumping the whole DOM.
 - `build_ai_prompt()` / the extension **Copy** button cap page content at **20,000 chars**
   by default (`maxChars` in JS, `max_chars=`/`--max-chars` in Python/CLI). A
   full `<body>` extraction on a JS-heavy SPA can still be enormous even after
