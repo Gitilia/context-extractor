@@ -1,7 +1,7 @@
 {
   "name": "context-extractor",
-  "version": "1.4.0",
-  "description": "Capture console/network/errors and extract AI-ready markdown from a Playwright (Node) page — JS/TS twin of the automation/ Python package, sharing the same extension/core/*.js.",
+  "version": "1.5.0",
+  "description": "Capture console/network/errors and extract AI-ready markdown from a Playwright (Node) page \u2014 JS/TS twin of the automation/ Python package, sharing the same extension/core/*.js.",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
