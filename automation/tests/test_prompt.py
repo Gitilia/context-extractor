@@ -14,7 +14,62 @@ def test_shared_js_files_exist_and_match_package():
     assert (CORE / "prompt.js").is_file()
     # package-side copies/symlinks must resolve to the same source
     assert "function extractMarkdown" in _read_js("dom.js")
+    assert "function truncateDataUri" in _read_js("dom.js")
+    assert "function inventoryInterestingControls" in _read_js("dom.js")
     assert "function buildAIPrompt" in _read_js("prompt.js")
+    assert "function truncateDataUri" in _read_js("prompt.js")
+
+
+def test_build_ai_prompt_truncates_data_uris_in_network(page):
+    page.goto("about:blank")
+    meta = {
+        "url": "https://example.test/page",
+        "title": "T",
+        "ts": 1_700_000_000_000,
+        "selector": "body",
+    }
+    long_data = "data:image/jpeg;base64," + ("A" * 500)
+    store = {
+        "console": [],
+        "errors": [],
+        "network": [{
+            "type": "fetch", "method": "GET", "url": long_data,
+            "status": 200, "ts": 3, "duration": 12, "error": None,
+        }],
+    }
+    out = page.evaluate(_build_prompt_script(meta, "# Hello", store))
+    assert "bytes truncated" in out
+    assert ("A" * 100) not in out
+
+
+def test_build_ai_prompt_includes_interesting_controls(page):
+    page.goto("about:blank")
+    meta = {"url": "https://example.test/page", "title": "T", "ts": 1, "selector": "body"}
+    controls = [
+        {
+            "tag": "button",
+            "role": "",
+            "ariaLabel": "Document options",
+            "text": "…",
+            "visible": True,
+            "selector": "#vis",
+        },
+        {
+            "tag": "button",
+            "role": "",
+            "ariaLabel": "Document options",
+            "text": "…",
+            "visible": False,
+            "selector": "#hid",
+        },
+    ]
+    out = page.evaluate(
+        _build_prompt_script(meta, "# Hello", {"console": [], "errors": [], "network": []}, None, controls)
+    )
+    assert "## Interesting Controls" in out
+    assert "[visible]" in out
+    assert "### Hidden" in out
+    assert "Document options" in out
 
 
 def test_build_ai_prompt_script_formats_errors_and_failures(page):

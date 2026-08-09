@@ -118,18 +118,44 @@ return extractMarkdown(el);
 `;
 }
 
+function buildInventoryScript(selector: string | null | undefined): string {
+  const domJs = readSharedJs('dom.js');
+  const selJson = JSON.stringify(selector || '');
+  return `
+(() => {
+${domJs}
+let el = null;
+const sel = ${selJson};
+if (sel) { try { el = document.querySelector(sel); } catch (_) { el = null; } }
+if (!el) el = document.body;
+return inventoryInterestingControls(el);
+})()
+`;
+}
+
+export interface InterestingControl {
+  tag: string;
+  role: string;
+  ariaLabel: string;
+  text: string;
+  visible: boolean;
+  selector: string;
+}
+
 function buildPromptScript(
   meta: Pick<ExtractedMarkdown, 'url' | 'title' | 'ts' | 'selector'>,
   markdown: string,
   store: CaptureStore,
   maxChars: number | undefined,
+  controls?: InterestingControl[],
 ): string {
   const promptJs = readSharedJs('prompt.js');
   const maxCharsJs = maxChars === undefined ? 'undefined' : JSON.stringify(maxChars);
+  const controlsJs = JSON.stringify(controls ?? []);
   return `
 (() => {
 ${promptJs}
-return buildAIPrompt(${JSON.stringify(meta)}, ${JSON.stringify(markdown)}, ${JSON.stringify(store)}, ${maxCharsJs});
+return buildAIPrompt(${JSON.stringify(meta)}, ${JSON.stringify(markdown)}, ${JSON.stringify(store)}, ${maxCharsJs}, ${controlsJs});
 })()
 `;
 }
@@ -191,15 +217,28 @@ export class ExtractorSession {
     };
   }
 
+  /** Inventory buttons / menuitems / aria-labels under selector (default body). */
+  async inventoryControls(selector?: string | null): Promise<InterestingControl[]> {
+    const list = (await this.page.evaluate(buildInventoryScript(selector))) as InterestingControl[];
+    return Array.isArray(list) ? list : [];
+  }
+
   async buildAiPrompt(selector?: string | null, maxChars?: number): Promise<string> {
     const extracted = await this.extractMarkdown(selector);
+    const controls = await this.inventoryControls(selector);
     const meta = {
       url: extracted.url,
       title: extracted.title,
       ts: extracted.ts,
       selector: extracted.selector,
     };
-    const script = buildPromptScript(meta, extracted.markdown, this.getStore(), maxChars);
+    const script = buildPromptScript(
+      meta,
+      extracted.markdown,
+      this.getStore(),
+      maxChars,
+      controls,
+    );
     return (await this.page.evaluate(script)) as string;
   }
 

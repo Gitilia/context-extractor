@@ -63,6 +63,9 @@ describe('ExtractorSession', () => {
       expect(full.markdown).toContain('**world**');
       expect(full.markdown).toContain('[docs](/docs)');
       expect(full.markdown).toContain('- Alpha');
+      expect(full.markdown).toContain('[tiny-jpeg](data:image/jpeg;base64,…[');
+      expect(full.markdown).toContain('bytes truncated])');
+      expect(full.markdown).not.toMatch(/4AAQSkZJRgABAQAAAQABAAD/);
 
       const scoped = await session.extractMarkdown('#main-content');
       expect(scoped.selector).toBe('#main-content');
@@ -95,8 +98,25 @@ describe('ExtractorSession', () => {
       expect(prompt.startsWith('# Page Context')).toBe(true);
       expect(prompt).toContain('## Page Content');
       expect(prompt).toContain('Hello **world**');
+      expect(prompt).toContain('## Interesting Controls');
+      expect(prompt).toContain('[visible]');
+      expect(prompt).toContain('Document options');
+      expect(prompt).toContain('### Hidden');
       expect(/JavaScript Errors|Console Errors/.test(prompt)).toBe(true);
       expect(prompt).toContain('_Extracted by Context Extractor_');
+    });
+  });
+
+  it('inventories visible and hidden controls', async () => {
+    await withPage(async (page) => {
+      const session = new ExtractorSession(page);
+      await page.goto(FIXTURE_URL, { waitUntil: 'domcontentloaded' });
+      const controls = await session.inventoryControls('#main-content');
+      const docs = controls.filter((c) => c.ariaLabel === 'Document options');
+      expect(docs.length).toBe(2);
+      expect(docs.some((c) => c.visible)).toBe(true);
+      expect(docs.some((c) => !c.visible)).toBe(true);
+      expect(controls.some((c) => c.ariaLabel === 'Upload file' && c.visible)).toBe(true);
     });
   });
 

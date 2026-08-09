@@ -94,15 +94,35 @@ return extractMarkdown(el);
 """
 
 
+def _build_inventory_script(selector: Optional[str]) -> str:
+    dom_js = _read_js("dom.js")
+    sel_json = json.dumps(selector or "")
+    return f"""
+(() => {{
+{dom_js}
+let el = null;
+const sel = {sel_json};
+if (sel) {{ try {{ el = document.querySelector(sel); }} catch (_) {{ el = null; }} }}
+if (!el) el = document.body;
+return inventoryInterestingControls(el);
+}})()
+"""
+
+
 def _build_prompt_script(
-    meta: dict[str, Any], markdown: str, store: dict[str, Any], max_chars: Optional[int] = None
+    meta: dict[str, Any],
+    markdown: str,
+    store: dict[str, Any],
+    max_chars: Optional[int] = None,
+    controls: Optional[list[Any]] = None,
 ) -> str:
     prompt_js = _read_js("prompt.js")
     max_chars_js = json.dumps(max_chars) if max_chars is not None else "undefined"
+    controls_js = json.dumps(controls if controls is not None else [])
     return f"""
 (() => {{
 {prompt_js}
-return buildAIPrompt({json.dumps(meta)}, {json.dumps(markdown)}, {json.dumps(store)}, {max_chars_js});
+return buildAIPrompt({json.dumps(meta)}, {json.dumps(markdown)}, {json.dumps(store)}, {max_chars_js}, {controls_js});
 }})()
 """
 
@@ -196,12 +216,18 @@ class ExtractorSession(_CaptureMixin):
             "markdown": markdown or "",
         }
 
+    def inventory_controls(self, selector: Optional[str] = None) -> list[Any]:
+        result = self.page.evaluate(_build_inventory_script(selector))
+        return list(result) if result else []
+
     def build_ai_prompt(self, selector: Optional[str] = None, max_chars: Optional[int] = None) -> str:
         extracted = self.extract_markdown(selector)
+        controls = self.inventory_controls(selector)
         meta = {k: extracted[k] for k in ("url", "title", "ts", "selector")}
-        script = _build_prompt_script(meta, extracted["markdown"], self.get_store(), max_chars)
+        script = _build_prompt_script(
+            meta, extracted["markdown"], self.get_store(), max_chars, controls
+        )
         return self.page.evaluate(script)
-
 
 class AsyncExtractorSession(_CaptureMixin):
     """Async API. Use with `playwright.async_api` or `camoufox.AsyncCamoufox`.
@@ -236,8 +262,15 @@ class AsyncExtractorSession(_CaptureMixin):
             "markdown": markdown or "",
         }
 
+    async def inventory_controls(self, selector: Optional[str] = None) -> list[Any]:
+        result = await self.page.evaluate(_build_inventory_script(selector))
+        return list(result) if result else []
+
     async def build_ai_prompt(self, selector: Optional[str] = None, max_chars: Optional[int] = None) -> str:
         extracted = await self.extract_markdown(selector)
+        controls = await self.inventory_controls(selector)
         meta = {k: extracted[k] for k in ("url", "title", "ts", "selector")}
-        script = _build_prompt_script(meta, extracted["markdown"], self.get_store(), max_chars)
+        script = _build_prompt_script(
+            meta, extracted["markdown"], self.get_store(), max_chars, controls
+        )
         return await self.page.evaluate(script)

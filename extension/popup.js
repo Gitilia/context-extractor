@@ -412,7 +412,7 @@ function wire() {
     out.push("");
     state.store.network.forEach((n) => {
       const status = n.error ? "ERR" : (n.status || "—");
-      out.push(`- ${n.method || "GET"} ${status} ${n.url}${n.duration ? " (" + n.duration + "ms)" : ""}${n.error ? " — " + n.error : ""}`);
+      out.push(`- ${n.method || "GET"} ${status} ${truncateDataUri(n.url || "")}${n.duration ? " (" + n.duration + "ms)" : ""}${n.error ? " — " + n.error : ""}`);
     });
     out.push("");
     out.push("---");

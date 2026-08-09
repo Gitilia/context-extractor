@@ -34,6 +34,7 @@ const session = new ExtractorSession(page); // attach BEFORE navigating
 await page.goto('https://example.com', { waitUntil: 'networkidle' });
 
 console.log(await session.buildAiPrompt()); // or session.extractMarkdown('#main')
+console.log(await session.inventoryControls('#main')); // visible/hidden buttons & aria-labels
 console.log(session.getStore());            // { console, errors, network }
 ```
 

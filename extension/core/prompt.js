@@ -16,8 +16,33 @@
 // Pass a tighter selector (or a larger maxChars) instead of relying on this
 // cap for real content; it exists as a safety net, not a summarizer.
 const DEFAULT_MAX_MARKDOWN_CHARS = 20000;
+const DATA_URI_SOFT_MAX = 120;
 
-function buildAIPrompt(meta, markdown, store, maxChars) {
+/**
+ * Collapse long data: URIs in network/prompt lines.
+ * Keep in sync with truncateDataUri in core/dom.js.
+ */
+function truncateDataUri(url, softMax) {
+  if (typeof url !== "string" || !url.startsWith("data:")) return url || "";
+  const limit = softMax || DATA_URI_SOFT_MAX;
+  if (url.length <= limit) return url;
+  const comma = url.indexOf(",");
+  const header = comma >= 0 ? url.slice(0, Math.min(comma, 64)) : url.slice(0, 64);
+  const payloadLen = comma >= 0 ? url.length - comma - 1 : url.length;
+  return header + ",…[" + payloadLen + " bytes truncated]";
+}
+
+function formatControlLine(c) {
+  const bits = [];
+  if (c.tag) bits.push(c.tag);
+  if (c.role) bits.push("role=" + c.role);
+  if (c.ariaLabel) bits.push('aria-label="' + c.ariaLabel + '"');
+  if (c.text) bits.push('"' + c.text + '"');
+  if (c.selector) bits.push("`" + c.selector + "`");
+  return (c.visible ? "[visible] " : "[hidden] ") + bits.join(" ");
+}
+
+function buildAIPrompt(meta, markdown, store, maxChars, controls) {
   const limit = maxChars || DEFAULT_MAX_MARKDOWN_CHARS;
   const parts = [];
 
@@ -39,6 +64,28 @@ function buildAIPrompt(meta, markdown, store, maxChars) {
     parts.push(heading);
     parts.push("");
     parts.push(truncated ? trimmed.slice(0, limit) + "\n…" : trimmed);
+    parts.push("");
+  }
+
+  const controlList = Array.isArray(controls) ? controls : [];
+  if (controlList.length) {
+    const visible = controlList.filter((c) => c && c.visible);
+    const hiddenCount = controlList.length - visible.length;
+    parts.push("## Interesting Controls");
+    parts.push("");
+    parts.push(
+      `_Showing ${visible.length} visible` +
+        (hiddenCount ? `, ${hiddenCount} hidden` : "") +
+        ` (of ${controlList.length} inventoried)._`,
+    );
+    parts.push("");
+    visible.forEach((c) => parts.push("- " + formatControlLine(c)));
+    if (hiddenCount) {
+      parts.push("");
+      parts.push("### Hidden");
+      parts.push("");
+      controlList.filter((c) => c && !c.visible).forEach((c) => parts.push("- " + formatControlLine(c)));
+    }
     parts.push("");
   }
 
@@ -80,14 +127,16 @@ function buildAIPrompt(meta, markdown, store, maxChars) {
     parts.push("");
     failed.forEach((n) => {
       const status = n.error ? "ERR" : n.status;
-      parts.push(`- ${n.method || "GET"} ${status} ${n.url}${n.duration ? " (" + n.duration + "ms)" : ""}${n.error ? " — " + n.error : ""}`);
+      const url = truncateDataUri(n.url || "");
+      parts.push(`- ${n.method || "GET"} ${status} ${url}${n.duration ? " (" + n.duration + "ms)" : ""}${n.error ? " — " + n.error : ""}`);
     });
     parts.push("");
   } else if (network.length) {
     parts.push("## Recent Requests");
     parts.push("");
     network.slice(-15).forEach((n) => {
-      parts.push(`- ${n.method || "GET"} ${n.status || "—"} ${n.url}${n.duration ? " (" + n.duration + "ms)" : ""}`);
+      const url = truncateDataUri(n.url || "");
+      parts.push(`- ${n.method || "GET"} ${n.status || "—"} ${url}${n.duration ? " (" + n.duration + "ms)" : ""}`);
     });
     parts.push("");
   }
